@@ -426,7 +426,9 @@ EXIM_MONITOR=eximon.bin
 # CFLAGS  += -I/opt/brightmail/bsdk-6.0/include
 # LDFLAGS += -lxml2_single -lbmiclient_single -L/opt/brightmail/bsdk-6.0/lib
 
+# Uncomment the following line to add Milter support.
 
+# EXPERIMENTAL_MILTER=yes
 
 ###############################################################################
 #                 THESE ARE THINGS YOU MIGHT WANT TO SPECIFY                  #

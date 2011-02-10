@@ -784,6 +784,13 @@ uschar *message_size_limit     = US"50M";
 uschar  message_subdir[2]      = { 0, 0 };
 uschar *message_reference      = NULL;
 
+#ifdef EXPERIMENTAL_MILTER
+uschar *milter_servers         = NULL;
+
+uschar *milter_message         = NULL;
+uschar *milter_result          = NULL;
+#endif
+
 /* MIME ACL expandables */
 #ifdef WITH_CONTENT_SCAN
 int     mime_anomaly_level     = 0;

@@ -290,6 +290,9 @@ static optionlist optionlist_config[] = {
   { "message_id_header_text",   opt_stringptr,   &message_id_text },
   { "message_logs",             opt_bool,        &message_logs },
   { "message_size_limit",       opt_stringptr,   &message_size_limit },
+#ifdef EXPERIMENTAL_MILTER
+  { "milter_servers",           opt_stringptr,   &milter_servers },
+#endif
 #ifdef SUPPORT_MOVE_FROZEN_MESSAGES
   { "move_frozen_messages",     opt_bool,        &move_frozen_messages },
 #endif

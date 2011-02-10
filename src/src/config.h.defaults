@@ -158,6 +158,7 @@ it's a default value. */
 #define EXPERIMENTAL_SRS
 #define EXPERIMENTAL_BRIGHTMAIL
 #define EXPERIMENTAL_DCC
+#define EXPERIMENTAL_MILTER
 
 /* Things that are not routinely changed but are nevertheless configurable
 just in case. */

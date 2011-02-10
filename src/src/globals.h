@@ -480,6 +480,13 @@ extern uschar *message_size_limit;     /* As it says */
 extern uschar  message_subdir[];       /* Subdirectory for messages */
 extern uschar *message_reference;      /* Reference for error messages */
 
+#ifdef EXPERIMENTAL_MILTER
+extern uschar *milter_servers;         /* List of milter servers (global) */
+
+extern uschar *milter_message;
+extern uschar *milter_result;
+#endif
+
 /* MIME ACL expandables */
 #ifdef WITH_CONTENT_SCAN
 extern int     mime_anomaly_level;

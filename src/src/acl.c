@@ -82,6 +82,9 @@ enum { ACLC_ACL,
        ACLC_MALWARE,
 #endif
        ACLC_MESSAGE,
+#ifdef EXPERIMENTAL_MILTER
+       ACLC_MILTER,
+#endif
 #ifdef WITH_CONTENT_SCAN
        ACLC_MIME_REGEX,
 #endif
@@ -144,6 +147,9 @@ static uschar *conditions[] = {
   US"malware",
 #endif
   US"message",
+#ifdef EXPERIMENTAL_MILTER
+  US"milter",
+#endif
 #ifdef WITH_CONTENT_SCAN
   US"mime_regex",
 #endif
@@ -270,6 +276,9 @@ static uschar cond_expand_at_top[] = {
   TRUE,    /* malware */
 #endif
   TRUE,    /* message */
+#ifdef EXPERIMENTAL_MILTER
+  TRUE,    /* milter */
+#endif
 #ifdef WITH_CONTENT_SCAN
   TRUE,    /* mime_regex */
 #endif
@@ -330,6 +339,9 @@ static uschar cond_modifiers[] = {
   FALSE,   /* malware */
 #endif
   TRUE,    /* message */
+#ifdef EXPERIMENTAL_MILTER
+  FALSE,   /* milter */
+#endif
 #ifdef WITH_CONTENT_SCAN
   FALSE,   /* mime_regex */
 #endif
@@ -446,6 +458,13 @@ static unsigned int cond_forbids[] = {
   #endif
 
   0,                                               /* message */
+
+  #ifdef EXPERIMENTAL_MILTER
+  (unsigned int)
+  ~((1<<ACL_WHERE_RCPT)|(1<<ACL_WHERE_MAIL)|       /* milter */
+    (1<<ACL_WHERE_DATA)|(1<<ACL_WHERE_CONNECT)|
+    (1<<ACL_WHERE_HELO)|(1<<ACL_WHERE_QUIT)),
+  #endif
 
   #ifdef WITH_CONTENT_SCAN
   (unsigned int)
@@ -2954,7 +2973,15 @@ for (; cb != NULL; cb = cb->next)
         }
       }
     break;
+    #endif
 
+    #ifdef EXPERIMENTAL_MILTER
+    case ACLC_MILTER:
+    rc = milter_condition(arg, where);
+    break;
+    #endif
+
+    #ifdef WITH_CONTENT_SCAN
     case ACLC_MIME_REGEX:
     rc = mime_regex(&arg);
     break;
