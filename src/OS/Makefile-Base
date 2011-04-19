@@ -300,7 +300,7 @@ convert4r4: Makefile ../src/convert4r4.src
 
 OBJ_WITH_CONTENT_SCAN = malware.o mime.o regex.o spam.o spool_mbox.o
 OBJ_WITH_OLD_DEMIME = demime.o
-OBJ_EXPERIMENTAL = bmi_spam.o spf.o srs.o dcc.o milter.o
+OBJ_EXPERIMENTAL = bmi_spam.o spf.o srs.o dcc.o milter.o milter_api.o milter_proto.o
 
 # Targets for final binaries; the main one has a build number which is
 # updated each time. We don't bother with that for the auxiliaries.
@@ -602,6 +602,8 @@ spf.o:           $(HDRS) spf.h spf.c
 srs.o:           $(HDRS) srs.h srs.c
 dcc.o:           $(HDRS) dcc.h dcc.c
 milter.o:        $(HDRS) milter.c
+milter_api.o:    $(HDRS) milter_api.c
+milter_proto.o:  $(HDRS) milter_proto.c
 
 # The module containing tables of available lookups, routers, auths, and
 # transports must be rebuilt if any of them are. However, because the makefiles

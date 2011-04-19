@@ -1,3 +1,6 @@
 exim-packaging-*
 *~
 *.bak
+*.swp
+Local/
+src/build-*/
