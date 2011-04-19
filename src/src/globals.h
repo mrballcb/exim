@@ -18,6 +18,12 @@ local_scan.h header file. */
 extern int h_errno;
 #endif
 
+/* We need to be careful about width of int and atomicity in signal handlers,
+especially with the rise of 64-bit systems breaking older assumptions.  But
+sig_atomic_t comes from signal.h so can't go into mytypes.h without including
+signal support in local_scan, which seems precipitous. */
+typedef volatile sig_atomic_t SIGNAL_BOOL;
+
 /* Now things that are present only when configured. */
 
 #ifdef EXIM_PERL
@@ -323,6 +329,7 @@ extern BOOL    dns_csa_use_reverse;    /* Check CSA in reverse DNS? (non-standar
 extern uschar *dns_ipv4_lookup;        /* For these domains, don't look for AAAA (or A6) */
 extern int     dns_retrans;            /* Retransmission time setting */
 extern int     dns_retry;              /* Number of retries */
+extern int     dns_use_edns0;          /* Coerce EDNS0 support on/off in resolver. */
 extern uschar *dnslist_domain;         /* DNS (black) list domain */
 extern uschar *dnslist_matched;        /* DNS (black) list matched key */
 extern uschar *dnslist_text;           /* DNS (black) list text message */
@@ -392,7 +399,7 @@ extern uschar *helo_try_verify_hosts;  /* Soft check HELO argument for these */
 extern BOOL    helo_verified;          /* True if HELO verified */
 extern BOOL    helo_verify_failed;     /* True if attempt failed */
 extern uschar *helo_verify_hosts;      /* Hard check HELO argument for these */
-extern uschar *hex_digits;             /* Used in several places */
+extern const uschar *hex_digits;             /* Used in several places */
 extern uschar *hold_domains;           /* Hold up deliveries to these */
 extern BOOL    host_find_failed_syntax;/* DNS syntax check failure */
 extern BOOL    host_checking_callout;  /* TRUE if real callout wanted */
@@ -490,7 +497,7 @@ extern uschar *milter_result;
 /* MIME ACL expandables */
 #ifdef WITH_CONTENT_SCAN
 extern int     mime_anomaly_level;
-extern uschar *mime_anomaly_text;
+extern const uschar *mime_anomaly_text;
 extern uschar *mime_boundary;
 extern uschar *mime_charset;
 extern uschar *mime_content_description;
@@ -666,7 +673,7 @@ extern address_item *sender_verified_list; /* Saved chain of sender verifies */
 extern address_item *sender_verified_failed; /* The one that caused denial */
 extern uschar *sending_ip_address;     /* Address of outgoing (SMTP) interface */
 extern int     sending_port;           /* Port of outgoing interface */
-extern volatile BOOL sigalrm_seen;     /* Flag for sigalrm_handler */
+extern SIGNAL_BOOL sigalrm_seen;       /* Flag for sigalrm_handler */
 extern uschar **sighup_argv;           /* Args for re-execing after SIGHUP */
 extern int     smtp_accept_count;      /* Count of connections */
 extern BOOL    smtp_accept_keepalive;  /* Set keepalive on incoming */
@@ -751,6 +758,8 @@ extern BOOL    srs_usetimestamp;       /* SRS use timestamp flag */
 #endif
 extern BOOL    strict_acl_vars;        /* ACL variables have to be set before being used */
 extern int     string_datestamp_offset;/* After insertion by string_format */
+extern int     string_datestamp_length;/* After insertion by string_format */
+extern int     string_datestamp_type;  /* After insertion by string_format */
 extern BOOL    strip_excess_angle_brackets; /* Surrounding route-addrs */
 extern BOOL    strip_trailing_dot;     /* Remove dots at ends of domains */
 extern uschar *submission_domain;      /* Domain for submission mode */
@@ -784,6 +793,7 @@ extern int     thismessage_size_limit; /* Limit for this message */
 extern int     timeout_frozen_after;   /* Max time to keep frozen messages */
 extern BOOL    timestamps_utc;         /* Use UTC for all times */
 extern int     transport_count;        /* Count of bytes transported */
+extern int     transport_newlines;     /* Accurate count of number of newline chars transported */
 extern uschar **transport_filter_argv; /* For on-the-fly filtering */
 extern int     transport_filter_timeout; /* Timeout for same */
 extern BOOL    transport_filter_timed_out; /* True if it did */

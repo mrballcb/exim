@@ -324,7 +324,7 @@ Returns:      the yield of transport_write_block()
 */
 
 BOOL
-transport_write_string(int fd, char *format, ...)
+transport_write_string(int fd, const char *format, ...)
 {
 va_list ap;
 va_start(ap, format);
@@ -426,6 +426,7 @@ for (ptr = start; ptr < end; ptr++)
 
     if (use_crlf) *chunk_ptr++ = '\r';
     *chunk_ptr++ = '\n';
+    transport_newlines++;
 
     /* The check_string test (formerly "from hack") replaces the specific
     string at the start of a line with an escape string (e.g. "From " becomes

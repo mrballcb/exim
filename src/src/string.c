@@ -641,7 +641,7 @@ Returns:    pointer to fresh piece of store containing sprintf'ed string
 */
 
 uschar *
-string_sprintf(char *format, ...)
+string_sprintf(const char *format, ...)
 {
 va_list ap;
 uschar buffer[STRING_SPRINTF_BUFFER_SIZE];
@@ -669,7 +669,7 @@ Returns:    < 0, = 0, or > 0, according to the comparison
 */
 
 int
-strncmpic(uschar *s, uschar *t, int n)
+strncmpic(const uschar *s, const uschar *t, int n)
 {
 while (n--)
   {
@@ -693,7 +693,7 @@ Returns:    < 0, = 0, or > 0, according to the comparison
 */
 
 int
-strcmpic(uschar *s, uschar *t)
+strcmpic(const uschar *s, const uschar *t)
 {
 while (*s != 0)
   {
@@ -1039,7 +1039,7 @@ as a va_list item.
 The formats are the usual printf() ones, with some omissions (never used) and
 two additions for strings: %S forces lower case, and %#s or %#S prints nothing
 for a NULL string. Without the # "NULL" is printed (useful in debugging). There
-is also the addition of %D, which inserts the date in the form used for
+is also the addition of %D and %M, which insert the date in the form used for
 datestamped log files.
 
 Arguments:
@@ -1052,7 +1052,7 @@ Returns:       TRUE if the result fitted in the buffer
 */
 
 BOOL
-string_format(uschar *buffer, int buflen, char *format, ...)
+string_format(uschar *buffer, int buflen, const char *format, ...)
 {
 BOOL yield;
 va_list ap;
@@ -1064,17 +1064,19 @@ return yield;
 
 
 BOOL
-string_vformat(uschar *buffer, int buflen, char *format, va_list ap)
+string_vformat(uschar *buffer, int buflen, const char *format, va_list ap)
 {
 enum { L_NORMAL, L_SHORT, L_LONG, L_LONGLONG, L_LONGDOUBLE };
 
 BOOL yield = TRUE;
 int width, precision;
-char *fp = format;             /* Deliberately not unsigned */
+const char *fp = format;       /* Deliberately not unsigned */
 uschar *p = buffer;
 uschar *last = buffer + buflen - 1;
 
 string_datestamp_offset = -1;  /* Datestamp not inserted */
+string_datestamp_length = 0;   /* Datestamp not inserted */
+string_datestamp_type = 0;     /* Datestamp not inserted */
 
 /* Scan the format and handle the insertions */
 
@@ -1083,8 +1085,8 @@ while (*fp != 0)
   int length = L_NORMAL;
   int *nptr;
   int slen;
-  char *null = "NULL";         /* ) These variables */
-  char *item_start, *s;        /* ) are deliberately */
+  const char *null = "NULL";   /* ) These variables */
+  const char *item_start, *s;  /* ) are deliberately */
   char newformat[16];          /* ) not unsigned */
 
   /* Non-% characters just get copied verbatim */
@@ -1229,18 +1231,30 @@ while (*fp != 0)
     *p++ = va_arg(ap, int);
     break;
 
-    case 'D':                   /* Insert datestamp for log file names */
-    s = CS tod_stamp(tod_log_datestamp);
+    case 'D':                   /* Insert daily datestamp for log file names */
+    s = CS tod_stamp(tod_log_datestamp_daily);
     string_datestamp_offset = p - buffer;   /* Passed back via global */
+    string_datestamp_length = Ustrlen(s);   /* Passed back via global */
+    string_datestamp_type = tod_log_datestamp_daily;
+    slen = string_datestamp_length;
+    goto INSERT_STRING;
+
+    case 'M':                   /* Insert monthly datestamp for log file names */
+    s = CS tod_stamp(tod_log_datestamp_monthly);
+    string_datestamp_offset = p - buffer;   /* Passed back via global */
+    string_datestamp_length = Ustrlen(s);   /* Passed back via global */
+    string_datestamp_type = tod_log_datestamp_monthly;
+    slen = string_datestamp_length;
     goto INSERT_STRING;
 
     case 's':
     case 'S':                   /* Forces *lower* case */
     s = va_arg(ap, char *);
 
-    INSERT_STRING:              /* Come to from %D above */
     if (s == NULL) s = null;
     slen = Ustrlen(s);
+
+    INSERT_STRING:              /* Come to from %D or %M above */
 
     /* If the width is specified, check that there is a precision
     set; if not, set it to the width to prevent overruns of long
@@ -1326,7 +1340,7 @@ Returns:        a message, in dynamic store
 */
 
 uschar *
-string_open_failed(int eno, char *format, ...)
+string_open_failed(int eno, const char *format, ...)
 {
 va_list ap;
 uschar buffer[1024];

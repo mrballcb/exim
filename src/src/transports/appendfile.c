@@ -21,7 +21,7 @@ supported only if SUPPORT_MBX is set. */
 
 enum { mbf_unix, mbf_mbx, mbf_smail, mbf_maildir, mbf_mailstore };
 
-static char *mailbox_formats[] = {
+static const char *mailbox_formats[] = {
   "unix", "mbx", "smail", "maildir", "mailstore" };
 
 
@@ -2419,6 +2419,9 @@ else
           "%s/maildirsize", check_path);
         return FALSE;
         }
+      /* can also return -2, which means that the file was removed because of
+      raciness; but in this case, the size & filecount will still have been
+      updated. */
 
       if (mailbox_size < 0) mailbox_size = size;
       if (mailbox_filecount < 0) mailbox_filecount = filecount;
@@ -2782,6 +2785,7 @@ if (yield == OK && ob->mbx_format)
 functions. */
 
 transport_count = 0;
+transport_newlines = 0;
 
 /* Write any configured prefix text first */
 
@@ -2807,21 +2811,26 @@ file, use its parent in the RCPT TO. */
 if (yield == OK && ob->use_bsmtp)
   {
   transport_count = 0;
+  transport_newlines = 0;
   if (ob->use_crlf) cr = US"\r";
   if (!transport_write_string(fd, "MAIL FROM:<%s>%s\n", return_path, cr))
     yield = DEFER;
   else
     {
     address_item *a;
+    transport_newlines++;
     for (a = addr; a != NULL; a = a->next)
       {
       address_item *b = testflag(a, af_pfr)? a->parent: a;
       if (!transport_write_string(fd, "RCPT TO:<%s>%s\n",
         transport_rcpt_address(b, tblock->rcpt_include_affixes), cr))
           { yield = DEFER; break; }
+      transport_newlines++;
       }
     if (yield == OK && !transport_write_string(fd, "DATA%s\n", cr))
       yield = DEFER;
+    else
+      transport_newlines++;
     }
   }
 
@@ -2854,8 +2863,10 @@ if (yield == OK && ob->message_suffix != NULL && ob->message_suffix[0] != 0)
 
 /* If batch smtp, write the terminating dot. */
 
-if (yield == OK && ob->use_bsmtp &&
-  !transport_write_string(fd, ".%s\n", cr)) yield = DEFER;
+if (yield == OK && ob->use_bsmtp ) {
+  if(!transport_write_string(fd, ".%s\n", cr)) yield = DEFER;
+  else transport_newlines++;
+}
 
 /* If MBX format is being used, all that writing was to the temporary file.
 However, if there was an earlier failure (Exim quota exceeded, for example),
@@ -2873,6 +2884,8 @@ if (temp_file != NULL && ob->mbx_format)
   if (yield == OK)
     {
     transport_count = 0;   /* Reset transport count for actual write */
+    /* No need to reset transport_newlines as we're just using a block copy
+     * routine so the number won't be affected */
     yield = copy_mbx_message(fd, fileno(temp_file), saved_size);
     }
   else if (errno >= 0) dataname = US"temporary file";
@@ -2890,10 +2903,13 @@ fsync() to be called for a FIFO. */
 
 if (yield == OK && !isfifo && EXIMfsync(fd) < 0) yield = DEFER;
 
-/* Update message_size to the accurate count of bytes written, including
-added headers. */
+/* Update message_size and message_linecount to the accurate count of bytes
+written, including added headers. Note; we subtract 1 from message_linecount as
+this variable doesn't count the new line between the header and the body of the
+message. */
 
 message_size = transport_count;
+message_linecount = transport_newlines - 1;
 
 /* If using a maildir++ quota file, add this message's size to it, and
 close the file descriptor, except when the quota has been disabled because we
@@ -2905,7 +2921,8 @@ if (!disable_quota)
   if (yield == OK && maildirsize_fd >= 0)
     maildir_record_length(maildirsize_fd, message_size);
   maildir_save_errno = errno;    /* Preserve errno while closing the file */
-  (void)close(maildirsize_fd);
+  if (maildirsize_fd >= 0)
+    (void)close(maildirsize_fd);
   errno = maildir_save_errno;
   }
 #endif  /* SUPPORT_MAILDIR */

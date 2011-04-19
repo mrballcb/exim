@@ -541,6 +541,7 @@ BOOL    dns_csa_use_reverse    = TRUE;
 uschar *dns_ipv4_lookup        = NULL;
 int     dns_retrans            = 0;
 int     dns_retry              = 0;
+int     dns_use_edns0          = -1; /* <0 = not coerced */
 uschar *dnslist_domain         = NULL;
 uschar *dnslist_matched        = NULL;
 uschar *dnslist_text           = NULL;
@@ -633,7 +634,7 @@ uschar *helo_try_verify_hosts  = NULL;
 BOOL    helo_verified          = FALSE;
 BOOL    helo_verify_failed     = FALSE;
 uschar *helo_verify_hosts      = NULL;
-uschar *hex_digits             = US"0123456789abcdef";
+const uschar *hex_digits       = CUS"0123456789abcdef";
 uschar *hold_domains           = NULL;
 BOOL    host_checking          = FALSE;
 BOOL    host_checking_callout  = FALSE;
@@ -794,7 +795,7 @@ uschar *milter_result          = NULL;
 /* MIME ACL expandables */
 #ifdef WITH_CONTENT_SCAN
 int     mime_anomaly_level     = 0;
-uschar *mime_anomaly_text      = NULL;
+const uschar *mime_anomaly_text      = NULL;
 uschar *mime_boundary          = NULL;
 uschar *mime_charset           = NULL;
 uschar *mime_content_description = NULL;
@@ -1080,7 +1081,7 @@ int     sender_verified_rc     = -1;
 BOOL    sender_verified_responded = FALSE;
 uschar *sending_ip_address     = NULL;
 int     sending_port           = -1;
-volatile  BOOL sigalrm_seen    = FALSE;
+SIGNAL_BOOL sigalrm_seen       = FALSE;
 uschar **sighup_argv           = NULL;
 int     smtp_accept_count      = 0;
 BOOL    smtp_accept_keepalive  = TRUE;
@@ -1171,6 +1172,8 @@ BOOL    srs_usetimestamp       = TRUE;
 #endif
 BOOL    strict_acl_vars        = FALSE;
 int     string_datestamp_offset= -1;
+int     string_datestamp_length= 0;
+int     string_datestamp_type  = -1;
 BOOL    strip_excess_angle_brackets = FALSE;
 BOOL    strip_trailing_dot     = FALSE;
 uschar *submission_domain      = NULL;
@@ -1259,6 +1262,7 @@ transport_instance  transport_defaults = {
 };
 
 int     transport_count;
+int     transport_newlines;
 uschar **transport_filter_argv  = NULL;
 int     transport_filter_timeout;
 BOOL    transport_filter_timed_out = FALSE;

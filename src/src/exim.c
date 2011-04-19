@@ -360,7 +360,7 @@ Returns:   nothing
 */
 
 void
-set_process_info(char *format, ...)
+set_process_info(const char *format, ...)
 {
 int len;
 va_list ap;
@@ -397,7 +397,7 @@ Returns:          the fopened FILE or NULL
 */
 
 FILE *
-modefopen(uschar *filename, char *options, mode_t mode)
+modefopen(const uschar *filename, const char *options, mode_t mode)
 {
 mode_t saved_umask = umask(0777);
 FILE *f = Ufopen(filename, options);
@@ -570,17 +570,20 @@ if (euid == root_uid || euid != uid || egid != gid || igflag)
 
 DEBUG(D_uid)
   {
-  int group_count;
+  int group_count, save_errno;
   gid_t group_list[NGROUPS_MAX];
   debug_printf("changed uid/gid: %s\n  uid=%ld gid=%ld pid=%ld\n", msg,
     (long int)geteuid(), (long int)getegid(), (long int)getpid());
   group_count = getgroups(NGROUPS_MAX, group_list);
+  save_errno = errno;
   debug_printf("  auxiliary group list:");
   if (group_count > 0)
     {
     int i;
     for (i = 0; i < group_count; i++) debug_printf(" %d", (int)group_list[i]);
     }
+  else if (group_count < 0)
+    debug_printf(" <error: %s>", strerror(save_errno));
   else debug_printf(" <none>");
   debug_printf("\n");
   }
@@ -909,19 +912,30 @@ if (fixed_never_users[0] > 0)
 
 fprintf(f, "Size of off_t: " SIZE_T_FMT "\n", sizeof(off_t));
 
-/* This runtime check is to help diagnose library linkage mismatches which
-result in segfaults and the like; as such, it's left until the end,
-just in case.  There will still be a "Configuration file is" line still to
-come. */
-#ifdef SUPPORT_TLS
-tls_version_report(f);
-#endif
-
 /* Everything else is details which are only worth reporting when debugging.
 Perhaps the tls_version_report should move into this too. */
 DEBUG(D_any) do {
 
   int i;
+
+/* clang defines __GNUC__ (at least, for me) so test for it first */
+#if defined(__clang__)
+  fprintf(f, "Compiler: CLang [%s]\n", __clang_version__);
+#elif defined(__GNUC__)
+  fprintf(f, "Compiler: GCC [%s]\n",
+# ifdef __VERSION__
+      __VERSION__
+# else
+      "? unknown version ?"
+# endif
+      );
+#else
+  fprintf(f, "Compiler: <unknown>\n");
+#endif
+
+#ifdef SUPPORT_TLS
+  tls_version_report(f);
+#endif
 
 #ifdef AUTH_CYRUS_SASL
   auth_cyrus_sasl_version_report(f);
@@ -1035,8 +1049,8 @@ Returns:            the dlopen handle or NULL on failure
 */
 
 static void *
-set_readline(char * (**fn_readline_ptr)(char *),
-             char * (**fn_addhist_ptr)(char *))
+set_readline(char * (**fn_readline_ptr)(const char *),
+             void   (**fn_addhist_ptr)(const char *))
 {
 void *dlhandle;
 void *dlhandle_curses = dlopen("libcurses.so", RTLD_GLOBAL|RTLD_LAZY);
@@ -1046,8 +1060,12 @@ if (dlhandle_curses != NULL) dlclose(dlhandle_curses);
 
 if (dlhandle != NULL)
   {
-  *fn_readline_ptr = (char *(*)(char*))dlsym(dlhandle, "readline");
-  *fn_addhist_ptr = (char *(*)(char*))dlsym(dlhandle, "add_history");
+  /* Checked manual pages; at least in GNU Readline 6.1, the prototypes are:
+   *   char * readline (const char *prompt);
+   *   void add_history (const char *string);
+   */
+  *fn_readline_ptr = (char *(*)(const char*))dlsym(dlhandle, "readline");
+  *fn_addhist_ptr = (void(*)(const char*))dlsym(dlhandle, "add_history");
   }
 else
   {
@@ -1077,7 +1095,7 @@ Returns:        pointer to dynamic memory, or NULL at end of file
 */
 
 static uschar *
-get_stdinput(char *(*fn_readline)(char *), char *(*fn_addhist)(char *))
+get_stdinput(char *(*fn_readline)(const char *), void(*fn_addhist)(const char *))
 {
 int i;
 int size = 0;
@@ -1396,7 +1414,19 @@ if (route_finduser(US EXIM_USERNAME, &pw, &exim_uid))
       EXIM_USERNAME);
     exit(EXIT_FAILURE);
     }
-  exim_gid = pw->pw_gid;
+  /* If ref:name uses a number as the name, route_finduser() returns
+  TRUE with exim_uid set and pw coerced to NULL. */
+  if (pw)
+    exim_gid = pw->pw_gid;
+#ifndef EXIM_GROUPNAME
+  else
+    {
+    fprintf(stderr,
+        "exim: ref:name should specify a usercode, not a group.\n"
+        "exim: can't let you get away with it unless you also specify a group.\n");
+    exit(EXIT_FAILURE);
+    }
+#endif
   }
 else
   {
@@ -3281,6 +3311,11 @@ till after reading the config, which might specify the exim gid. Therefore,
 save the group list here first. */
 
 group_count = getgroups(NGROUPS_MAX, group_list);
+if (group_count < 0)
+  {
+  fprintf(stderr, "exim: getgroups() failed: %s\n", strerror(errno));
+  exit(EXIT_FAILURE);
+  }
 
 /* There is a fundamental difference in some BSD systems in the matter of
 groups. FreeBSD and BSDI are known to be different; NetBSD and OpenBSD are
@@ -4547,8 +4582,8 @@ if (expansion_test)
 
   else
     {
-    char *(*fn_readline)(char *) = NULL;
-    char *(*fn_addhist)(char *) = NULL;
+    char *(*fn_readline)(const char *) = NULL;
+    void (*fn_addhist)(const char *) = NULL;
 
     #ifdef USE_READLINE
     void *dlhandle = set_readline(&fn_readline, &fn_addhist);

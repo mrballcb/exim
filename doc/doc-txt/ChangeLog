@@ -3,10 +3,32 @@ $Cambridge: exim/doc/doc-txt/ChangeLog,v 1.632 2010/06/12 15:21:25 jetmore Exp $
 Change log file for Exim from version 4.21
 -------------------------------------------
 
+Exim version 4.76
+-----------------
+
+PP/01 The new ldap_require_cert option would segfault if used.  Fixed.
+
+PP/02 Harmonised TLS library version reporting; only show if debugging.
+      Layout now matches that introduced for other libraries in 4.74 PP/03.
+
+PP/03 New openssl_options items: no_sslv2 no_sslv3 no_ticket no_tlsv1
+
+PP/04 New "dns_use_edns0" global option.
+
+PP/05 Don't segfault on misconfiguration of ref:name exim-user as uid.
+      Bugzilla 1098.
+
+PP/06 Extra paranoia around buffer usage at the STARTTLS transition.
+      nb: Exim is not vulnerable to http://www.kb.cert.org/vuls/id/555316
+
+PP/07 Catch divide-by-zero in ${eval:...}.
+      Fixes bugzilla 1102.
+
+
 Exim version 4.75
 -----------------
 
-NM/01 Workround for PCRE version dependancy in version reporting
+NM/01 Workround for PCRE version dependency in version reporting
       Bugzilla 1073
 
 TF/01 Update valgrind.h and memcheck.h to copies from valgrind-3.6.0.
@@ -37,6 +59,54 @@ PP/04 Bugzilla 230: Support TLS-enabled LDAP (in addition to ldaps).
 
 NM/04 Fixed exiqgrep to cope with mailq missing size issue
       Fixes bug 943.
+
+PP/05 Bugzilla 1083: when lookup expansion defers, escape the output which
+      is logged, to avoid truncation. Patch from John Horne.
+
+PP/06 Bugzilla 1042: implement freeze_signal on pipe transports.
+      Patch from Jakob Hirsch.
+
+PP/07 Bugzilla 1061: restrict error messages sent over SMTP to not reveal
+      SQL string expansion failure details.
+      Patch from Andrey Oktyabrski.
+
+PP/08 Bugzilla 486: implement %M datestamping in log filenames.
+      Patch from Simon Arlott.
+
+PP/09 New lookups functionality failed to compile on old gcc which rejects
+      extern declarations in function scope.
+      Patch from Oliver Fleischmann
+
+PP/10 Use sig_atomic_t for flags set from signal handlers.
+      Check getgroups() return and improve debugging.
+      Fixed developed for diagnosis in bug 927 (which turned out to be
+      a kernel bug).
+
+PP/11 Bugzilla 1055: Update $message_linecount for maildir_tag.
+      Patch from Mark Zealey.
+
+PP/12 Bugzilla 1056: Improved spamd server selection.
+      Patch from Mark Zealey.
+
+PP/13 Bugzilla 1086: Deal with maildir quota file races.
+      Based on patch from Heiko Schlittermann.
+
+PP/14 Bugzilla 1019: DKIM multiple signature generation fix.
+      Patch from Uwe Doering, sign-off by Michael Haardt.
+
+NM/05 Fix to spam.c to accommodate older gcc versions which dislike
+      variable declaration deep within a block.  Bug and patch from
+      Dennis Davis.
+
+PP/15 lookups-Makefile IRIX compatibilty coercion.
+
+PP/16 Make DISABLE_DKIM build knob functional.
+
+NM/06 Bugzilla 968: child_open_uid: restore default SIGPIPE handler
+      Patch by Simon Arlott
+
+TF/03 Fix valgrind.h portability to C89 compilers that do not support
+      variable argument macros. Our copy now differs from upstream.
 
 
 Exim version 4.74

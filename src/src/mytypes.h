@@ -31,7 +31,7 @@ local_scan.h includes it and exim.h includes them both (to get this earlier). */
 /* If gcc is being used to compile Exim, we can use its facility for checking
 the arguments of printf-like functions. This is done by a macro. */
 
-#ifdef __GNUC__
+#if defined(__GNUC__) || defined(__clang__)
 #define PRINTF_FUNCTION(A,B)  __attribute__((format(printf,A,B)))
 #else
 #define PRINTF_FUNCTION(A,B)
@@ -42,8 +42,10 @@ the arguments of printf-like functions. This is done by a macro. */
 the standard header files, so we use "uschar". Solaris has u_char in
 sys/types.h. This is just a typing convenience, of course. */
 
-typedef int BOOL;
 typedef unsigned char uschar;
+typedef int BOOL;
+/* We also have SIGNAL_BOOL, which requires signal.h be included, so is defined
+elsewhere */
 
 
 /* These macros save typing for the casting that is needed to cope with the

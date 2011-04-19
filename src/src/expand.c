@@ -328,9 +328,9 @@ enum {
 /* Type for main variable table */
 
 typedef struct {
-  char *name;
-  int   type;
-  void *value;
+  const char *name;
+  int         type;
+  void       *value;
 } var_entry;
 
 /* Type for entries pointing to address/length pairs. Not currently
@@ -636,9 +636,9 @@ static BOOL malformed_header;
 
 /* For textual hashes */
 
-static char *hashcodes = "abcdefghijklmnopqrtsuvwxyz"
-                         "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-                         "0123456789";
+static const char *hashcodes = "abcdefghijklmnopqrtsuvwxyz"
+                               "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                               "0123456789";
 
 enum { HMAC_MD5, HMAC_SHA1 };
 
@@ -1591,7 +1591,7 @@ while (last > first)
     return tod_stamp(tod_zulu);
 
     case vtype_todlf:                          /* Log file datestamp tod */
-    return tod_stamp(tod_log_datestamp);
+    return tod_stamp(tod_log_datestamp_daily);
 
     case vtype_reply:                          /* Get reply address */
     s = find_header(US"reply-to:", exists_only, newsize, TRUE,
@@ -3110,9 +3110,21 @@ if (*error == NULL)
     int op = *s++;
     int y = eval_op_unary(&s, decimal, error);
     if (*error != NULL) break;
-    if (op == '*') x *= y;
-      else if (op == '/') x /= y;
-      else x %= y;
+    if (op == '*')
+      x *= y;
+    else
+      {
+      if (y == 0)
+        {
+        *error = (op == '/') ? US"divide by zero" : US"modulo by zero";
+        x = 0;
+        break;
+        }
+      if (op == '/')
+        x /= y;
+      else
+        x %= y;
+      }
     }
   }
 *sptr = s;
@@ -3679,8 +3691,8 @@ while (*s != 0)
         if (search_find_defer)
           {
           expand_string_message =
-            string_sprintf("lookup of \"%s\" gave DEFER: %s", key,
-              search_error_message);
+            string_sprintf("lookup of \"%s\" gave DEFER: %s",
+              string_printing2(key, FALSE), search_error_message);
           goto EXPAND_FAILED;
           }
         if (expand_setup > 0) expand_nmax = expand_setup;

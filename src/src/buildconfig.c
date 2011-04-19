@@ -42,16 +42,16 @@ normally called independently. */
 #include <grp.h>
 
 typedef struct {
-  char *name;
+  const char *name;
   int *flag;
 } have_item;
 
 typedef struct {
-  char *name;
+  const char *name;
   char *data;
 } save_item;
 
-static char *db_opts[] = { "", "USE_DB", "USE_GDBM", "USE_TDB" };
+static const char *db_opts[] = { "", "USE_DB", "USE_GDBM", "USE_TDB" };
 
 static int have_ipv6 = 0;
 static int have_iconv = 0;
@@ -103,8 +103,10 @@ main(int argc, char **argv)
 {
 off_t test_off_t = 0;
 time_t test_time_t = 0;
+#if ! (__STDC_VERSION__ >= 199901L)
 size_t test_size_t = 0;
 unsigned long test_ulong_t = 0L;
+#endif
 long test_long_t = 0;
 FILE *base;
 FILE *new;
@@ -557,9 +559,9 @@ while (fgets(buffer, sizeof(buffer), base) != NULL)
     int isgroup = name[10] == 'G';
     uid_t uid = 0;
     gid_t gid = 0;
-    char *s;
-    char *username = NULL;
-    char *user = getenv(name);
+    const char *s;
+    const char *username = NULL;
+    const char *user = getenv(name);
 
     if (user == NULL) user = "";
     while (isspace((unsigned char)(*user))) user++;
@@ -600,8 +602,7 @@ while (fgets(buffer, sizeof(buffer), base) != NULL)
       while (isspace(*user)) user++;
       username = user;
       }
-
-    else if (isgroup)
+else if (isgroup)
       {
       struct group *gr = getgrnam(user);
       if (gr == NULL)

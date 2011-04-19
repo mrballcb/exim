@@ -1081,8 +1081,10 @@ Returns:     nothing
 void
 tls_version_report(FILE *f)
 {
-fprintf(f, "OpenSSL compile-time version: %s\n", OPENSSL_VERSION_TEXT);
-fprintf(f, "OpenSSL runtime version: %s\n", SSLeay_version(SSLEAY_VERSION));
+fprintf(f, "Library version: OpenSSL: Compile: %s\n"
+           "                          Runtime: %s\n",
+           OPENSSL_VERSION_TEXT,
+           SSLeay_version(SSLEAY_VERSION));
 }
 
 
@@ -1178,7 +1180,7 @@ all options unless explicitly for DTLS, let the administrator choose which
 to apply.
 
 This list is current as of:
-  ==>  0.9.8n  <==  */
+  ==>  1.0.0c  <==  */
 static struct exim_openssl_option exim_openssl_options[] = {
 /* KEEP SORTED ALPHABETICALLY! */
 #ifdef SSL_OP_ALL
@@ -1216,6 +1218,18 @@ static struct exim_openssl_option exim_openssl_options[] = {
 #endif
 #ifdef SSL_OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION
   { US"no_session_resumption_on_renegotiation", SSL_OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION },
+#endif
+#ifdef SSL_OP_NO_SSLv2
+  { US"no_sslv2", SSL_OP_NO_SSLv2 },
+#endif
+#ifdef SSL_OP_NO_SSLv3
+  { US"no_sslv3", SSL_OP_NO_SSLv3 },
+#endif
+#ifdef SSL_OP_NO_TICKET
+  { US"no_ticket", SSL_OP_NO_TICKET },
+#endif
+#ifdef SSL_OP_NO_TLSv1
+  { US"no_tlsv1", SSL_OP_NO_TLSv1 },
 #endif
 #ifdef SSL_OP_SINGLE_DH_USE
   { US"single_dh_use", SSL_OP_SINGLE_DH_USE },
@@ -1289,11 +1303,10 @@ uschar *s, *end;
 uschar keep_c;
 BOOL adding, item_parsed;
 
+result = 0L;
 /* We grandfather in as default the one option which we used to set always. */
 #ifdef SSL_OP_DONT_INSERT_EMPTY_FRAGMENTS
-result = SSL_OP_DONT_INSERT_EMPTY_FRAGMENTS;
-#else
-result = 0L;
+result |= SSL_OP_DONT_INSERT_EMPTY_FRAGMENTS;
 #endif
 
 if (option_spec == NULL)
@@ -1310,7 +1323,7 @@ for (s=option_spec; *s != '\0'; /**/)
   if (*s != '+' && *s != '-')
     {
     DEBUG(D_tls) debug_printf("malformed openssl option setting: "
-        "+ or - expected but found \"%s\"", s);
+        "+ or - expected but found \"%s\"\n", s);
     return FALSE;
     }
   adding = *s++ == '+';
@@ -1320,7 +1333,7 @@ for (s=option_spec; *s != '\0'; /**/)
   item_parsed = tls_openssl_one_option_parse(s, &item);
   if (!item_parsed)
     {
-    DEBUG(D_tls) debug_printf("openssl option setting unrecognised: \"%s\"", s);
+    DEBUG(D_tls) debug_printf("openssl option setting unrecognised: \"%s\"\n", s);
     return FALSE;
     }
   DEBUG(D_tls) debug_printf("openssl option, %s from %lx: %lx (%s)\n",
