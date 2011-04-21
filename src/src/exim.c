@@ -779,6 +779,9 @@ fprintf(f, "Support for:");
 #ifdef EXPERIMENTAL_DCC
   fprintf(f, " Experimental_DCC");
 #endif
+#ifdef EXPERIMENTAL_MILTER
+  fprintf(f, " Experimental_Milter");
+#endif
 fprintf(f, "\n");
 
 fprintf(f, "Lookups (built-in):");
